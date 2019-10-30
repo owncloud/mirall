@@ -74,6 +74,7 @@ public slots:
     void slotCrash();
     void slotCrashEnforce();
     void slotCrashFatal();
+    void slotCrashException();
     /**
      * Will download a virtual file, and open the result.
      * The argument is the filename of the virtual file (including the extension)
@@ -88,6 +89,7 @@ protected:
     void setupTranslations();
     void setupLogging();
     bool event(QEvent *event);
+    bool notify(QObject *receiver, QEvent *event);
 
 signals:
     void folderRemoved();
