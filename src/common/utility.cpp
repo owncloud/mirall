@@ -52,6 +52,8 @@
 #include "utility_win.cpp"
 #elif defined(Q_OS_MAC)
 #include "utility_mac.cpp"
+#elif defined(Q_OS_HAIKU)
+#include "utility_haiku.cpp"
 #else
 #include "utility_unix.cpp"
 #endif
@@ -169,6 +171,8 @@ static QLatin1String platform()
     return QLatin1String("OpenBSD");
 #elif defined(Q_OS_SOLARIS)
     return QLatin1String("Solaris");
+#elif defined(Q_OS_HAIKU)
+    return QLatin1String("Haiku");
 #else
     return QSysInfo::productType();
 #endif
@@ -209,7 +213,7 @@ void Utility::setLaunchOnStartup(const QString &appName, const QString &guiName,
 
 qint64 Utility::freeDiskSpace(const QString &path)
 {
-#if defined(Q_OS_MAC) || defined(Q_OS_FREEBSD) || defined(Q_OS_FREEBSD_KERNEL) || defined(Q_OS_NETBSD) || defined(Q_OS_OPENBSD)
+#if defined(Q_OS_MAC) || defined(Q_OS_FREEBSD) || defined(Q_OS_FREEBSD_KERNEL) || defined(Q_OS_NETBSD) || defined(Q_OS_OPENBSD) || defined(Q_OS_HAIKU)
     struct statvfs stat;
     if (statvfs(path.toLocal8Bit().data(), &stat) == 0) {
         return (qint64)stat.f_bavail * stat.f_frsize;
