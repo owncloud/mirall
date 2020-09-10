@@ -518,6 +518,8 @@ void FolderMan::slotFolderSyncPaused(Folder *f, bool paused)
         scheduleFolder(f);
     } else {
         _disabledFolders.insert(f);
+        if (_scheduledFolders.removeAll(f) > 0)
+            emit scheduleQueueChanged();
     }
 }
 
@@ -582,8 +584,10 @@ void FolderMan::scheduleFolder(Folder *f)
             _socketApi->slotUpdateFolderView(f);
             return;
         }
-        f->prepareToSync();
-        emit folderSyncStateChange(f);
+        if (!f->isSyncRunning()) {
+            f->resetSyncResult();
+            emit folderSyncStateChange(f);
+        }
         _scheduledFolders.enqueue(f);
         emit scheduleQueueChanged();
     } else {
@@ -605,8 +609,10 @@ void FolderMan::scheduleFolderNext(Folder *f)
 
     _scheduledFolders.removeAll(f);
 
-    f->prepareToSync();
-    emit folderSyncStateChange(f);
+    if (!f->isSyncRunning()) {
+        f->resetSyncResult();
+        emit folderSyncStateChange(f);
+    }
     _scheduledFolders.prepend(f);
     emit scheduleQueueChanged();
 
@@ -791,6 +797,7 @@ void FolderMan::slotStartScheduledFolderSync()
         registerFolderWithSocketApi(folder);
 
         _currentSyncFolder = folder;
+        folder->resetSyncResult();
         folder->startSync(QStringList());
     }
 }
@@ -956,6 +963,12 @@ void FolderMan::slotFolderSyncFinished(const SyncResult &)
         qPrintable(f->shortGuiLocalPath()),
         qPrintable(f->accountState()->account()->displayName()),
         qPrintable(f->remoteUrl().toString()));
+
+    // if it's scheduled to run again, move to waiting state immediately
+    if (_scheduledFolders.contains(f)) {
+        f->resetSyncState();
+        emit folderSyncStateChange(f);
+    }
 
     if (f == _currentSyncFolder) {
         _lastSyncFolder = _currentSyncFolder;
@@ -1284,8 +1297,8 @@ void FolderMan::trayOverallStatus(const QList<Folder *> &folders,
                 case SyncResult::NotYetStarted:
                     various++;
                     break;
-                case SyncResult::SyncPrepare:
-                case SyncResult::SyncRunning:
+                case SyncResult::SyncDiscovery:
+                case SyncResult::SyncPropagation:
                     runSeen++;
                     break;
                 case SyncResult::Problem: // don't show the problem icon in tray.
@@ -1311,7 +1324,7 @@ void FolderMan::trayOverallStatus(const QList<Folder *> &folders,
             // only if all folders are paused
             *status = SyncResult::Paused;
         } else if (runSeen > 0) {
-            *status = SyncResult::SyncRunning;
+            *status = SyncResult::SyncPropagation;
         } else if (goodSeen > 0) {
             *status = SyncResult::Success;
         }
@@ -1329,10 +1342,10 @@ QString FolderMan::trayTooltipStatusString(
     case SyncResult::NotYetStarted:
         folderMessage = tr("Waiting to start syncing.");
         break;
-    case SyncResult::SyncPrepare:
-        folderMessage = tr("Preparing for sync.");
+    case SyncResult::SyncDiscovery:
+        folderMessage = tr("Sync is running.");
         break;
-    case SyncResult::SyncRunning:
+    case SyncResult::SyncPropagation:
         folderMessage = tr("Sync is running.");
         break;
     case SyncResult::Success:

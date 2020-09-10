@@ -290,7 +290,7 @@ void Folder::setSyncPaused(bool paused)
     saveToSettings();
 
     if (!paused) {
-        setSyncState(SyncResult::NotYetStarted);
+        resetSyncResult();
     } else {
         setSyncState(SyncResult::Paused);
     }
@@ -309,7 +309,7 @@ SyncResult Folder::syncResult() const
     return _syncResult;
 }
 
-void Folder::prepareToSync()
+void Folder::resetSyncResult()
 {
     _syncResult.reset();
     _syncResult.setStatus(SyncResult::NotYetStarted);
@@ -798,7 +798,7 @@ void Folder::startSync(const QStringList &pathList)
     }
 
     _timeSinceLastSyncStart.start();
-    _syncResult.setStatus(SyncResult::SyncPrepare);
+    _syncResult.setStatus(SyncResult::SyncDiscovery);
     emit syncStateChange();
 
     qCInfo(lcFolder) << "*** Start syncing " << remoteUrl().toString() << " -" << APPLICATION_NAME << "client version"
@@ -902,7 +902,7 @@ void Folder::slotSyncError(const QString &message, ErrorCategory category)
 void Folder::slotSyncStarted()
 {
     qCInfo(lcFolder) << "#### Propagation start ####################################################";
-    _syncResult.setStatus(SyncResult::SyncRunning);
+    _syncResult.setStatus(SyncResult::SyncPropagation);
     emit syncStateChange();
 }
 
@@ -924,13 +924,13 @@ void Folder::slotSyncFinished(bool success)
 
     auto anotherSyncNeeded = _engine->isAnotherSyncNeeded();
 
-    if (syncError) {
+    if (_definition.paused) {
+        // Maybe the sync was terminated because the user paused the folder
+        _syncResult.setStatus(SyncResult::Paused);
+    } else if (syncError) {
         _syncResult.setStatus(SyncResult::Error);
     } else if (_syncResult.foundFilesNotSynced()) {
         _syncResult.setStatus(SyncResult::Problem);
-    } else if (_definition.paused) {
-        // Maybe the sync was terminated because the user paused the folder
-        _syncResult.setStatus(SyncResult::Paused);
     } else {
         _syncResult.setStatus(SyncResult::Success);
     }
@@ -1151,7 +1151,7 @@ void Folder::slotHydrationStarts()
 
     // Let everyone know we're syncing
     _syncResult.reset();
-    _syncResult.setStatus(SyncResult::SyncRunning);
+    _syncResult.setStatus(SyncResult::SyncPropagation);
     emit syncStarted();
     emit syncStateChange();
 }
