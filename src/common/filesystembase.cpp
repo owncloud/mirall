@@ -537,7 +537,7 @@ QString FileSystem::pathtoUNC(const QString &_str)
 
 bool FileSystem::isChildPathOf(QStringView child, QStringView parent)
 {
-    static const auto Casing = Utility::fsCasePreserving() ? Qt::CaseInsensitive : Qt::CaseSensitive;
+    static const auto Casing = Utility::fsCaseSensitivity();
     // ignore additional / in the assert
     Q_ASSERT(parent.startsWith(QFileInfo(parent.toString()).canonicalFilePath(), Casing));
     Q_ASSERT(child.startsWith(QFileInfo(child.toString()).canonicalFilePath(), Casing));

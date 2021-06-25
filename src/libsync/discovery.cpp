@@ -881,8 +881,8 @@ void ProcessDirectoryJob::processFileAnalyzeLocalInfo(
             // Exception: If the rename changes case only (like "foo" -> "Foo") the
             // old filename might still point to the same file.
             && !(Utility::fsCasePreserving()
-                 && originalPath.compare(path._local, Qt::CaseInsensitive) == 0
-                 && originalPath != path._local)) {
+                && Utility::fileNamesEqual(originalPath, path._local)
+                && originalPath != path._local)) {
             qCInfo(lcDisco) << "Not a move, base file still exists at" << originalPath;
             return false;
         }
