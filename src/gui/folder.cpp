@@ -285,10 +285,7 @@ bool Folder::canSync() const
 bool Folder::dueToSync() const
 {
     // conditions taken from previous folderman implementation
-    if (isSyncRunning() ||
-            etagJob()   ||
-            isBusy()    ||
-            !canSync()) {
+    if (isSyncRunning() || etagJob() || isBusy() || !canSync()) {
         return false;
     }
 
