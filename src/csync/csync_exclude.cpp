@@ -30,6 +30,7 @@
 #include "csync_exclude.h"
 
 #include "common/utility.h"
+#include "common/filesystembase.h"
 #include "../version.h"
 
 #include <QString>
@@ -319,7 +320,7 @@ bool ExcludedFiles::isExcluded(
     const QString &basePath,
     bool excludeHidden) const
 {
-    if (!filePath.startsWith(basePath, Utility::fsCasePreserving() ? Qt::CaseInsensitive : Qt::CaseSensitive)) {
+    if (!FileSystem::isChildPathOf(filePath, basePath)) {
         // Mark paths we're not responsible for as excluded...
         return true;
     }
@@ -351,7 +352,7 @@ bool ExcludedFiles::isExcluded(
 
 bool ExcludedFiles::isExcludedRemote(const QString &filePath, const QString &basePath, ItemType type) const
 {
-    if (!filePath.startsWith(basePath, Utility::fsCasePreserving() ? Qt::CaseInsensitive : Qt::CaseSensitive)) {
+    if (!FileSystem::isChildPathOf(filePath, basePath)) {
         // Mark paths we're not responsible for as excluded...
         return true;
     }

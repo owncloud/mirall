@@ -263,10 +263,12 @@ void Utility::usleep(int usec)
 }
 
 // This can be overriden from the tests
-OCSYNC_EXPORT bool fsCasePreserving_override = []()-> bool {
-    QByteArray env = qgetenv("OWNCLOUD_TEST_CASE_PRESERVING");
-    if (!env.isEmpty())
-        return env.toInt();
+OCSYNC_EXPORT bool fsCasePreserving_override = []() -> bool {
+    static bool ok = false;
+    static int env = qEnvironmentVariableIntValue("OWNCLOUD_TEST_CASE_PRESERVING", &ok);
+    if (ok) {
+        return env;
+    }
     return Utility::isWindows() || Utility::isMac();
 }();
 
@@ -277,15 +279,18 @@ bool Utility::fsCasePreserving()
 
 bool Utility::fileNamesEqual(const QString &fn1, const QString &fn2)
 {
-    const QDir fd1(fn1);
-    const QDir fd2(fn2);
-
+    const QFileInfo fd1(fn1);
+    const QFileInfo fd2(fn2);
+    qDebug() << fd1.canonicalFilePath() << fd2.canonicalFilePath();
     // Attention: If the path does not exist, canonicalPath returns ""
     // ONLY use this function with existing pathes.
+    Q_ASSERT(fd1.exists());
+    Q_ASSERT(fd2.exists());
+    Q_ASSERT(fd1.canonicalFilePath() == fn1);
+    Q_ASSERT(fd2.canonicalFilePath() == fn2);
     const QString a = fd1.canonicalPath();
     const QString b = fd2.canonicalPath();
-    bool re = !a.isEmpty() && QString::compare(a, b, fsCasePreserving() ? Qt::CaseInsensitive : Qt::CaseSensitive) == 0;
-    return re;
+    return !a.isEmpty() && QString::compare(a, b, fsCaseSensitivity()) == 0;
 }
 
 QDateTime Utility::qDateTimeFromTime_t(qint64 t)

@@ -42,13 +42,13 @@ SyncFileStatus::SyncFileStatusTag SyncFileStatusTracker::lookupProblem(const QSt
         const QString &problemPath = it->first;
         SyncFileStatus::SyncFileStatusTag severity = it->second;
 
-        if (problemPath.compare(pathToMatch, _caseSensitivity) == 0) {
+        if (Utility::fileNamesEqual(problemPath, pathToMatch)) {
             return severity;
         } else if (severity == SyncFileStatus::StatusError
-            && problemPath.startsWith(pathToMatch, _caseSensitivity)
+            && FileSystem::isChildPathOf(problemPath, pathToMatch)
             && (pathToMatch.isEmpty() || problemPath.at(pathToMatch.size()) == QLatin1Char('/'))) {
             return SyncFileStatus::StatusWarning;
-        } else if (!problemPath.startsWith(pathToMatch, _caseSensitivity)) {
+        } else if (!FileSystem::isChildPathOf(problemPath, pathToMatch)) {
             // Starting at lower_bound we get the first path that is not smaller,
             // since: "a/" < "a/aa" < "a/aa/aaa" < "a/ab/aba"
             // If problemMap keys are ["a/aa/aaa", "a/ab/aba"] and pathToMatch == "a/aa",
@@ -91,7 +91,6 @@ static inline bool hasExcludedStatus(const SyncFileItem &item)
 
 SyncFileStatusTracker::SyncFileStatusTracker(SyncEngine *syncEngine)
     : _syncEngine(syncEngine)
-    , _caseSensitivity(Utility::fsCaseSensitivity())
 {
     connect(syncEngine, &SyncEngine::aboutToPropagate,
         this, &SyncFileStatusTracker::slotAboutToPropagate);
