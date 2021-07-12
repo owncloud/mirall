@@ -107,7 +107,7 @@ QList<Folder *> FolderMan::list() const
 
 void FolderMan::unloadFolder(Folder *f)
 {
-    if (!f) {
+    if (!OC_ENSURE(f)) {
         return;
     }
 
