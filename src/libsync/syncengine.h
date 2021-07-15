@@ -86,6 +86,7 @@ public:
     AccountPtr account() const;
     SyncJournalDb *journal() const { return _journal; }
     QString localPath() const { return _localPath; }
+    QString remotePath() const { return _remotePath; }
 
     /** Duration in ms that uploads should be delayed after a file change
      *

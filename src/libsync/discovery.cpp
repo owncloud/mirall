@@ -13,20 +13,21 @@
  */
 
 #include "discovery.h"
+#include "common/checksums.h"
 #include "common/syncjournaldb.h"
+#include "csync.h"
+#include "csync_exclude.h"
+#include "owncloudpropagator.h"
 #include "syncfileitem.h"
-#include <QDebug>
+#include "vio/csync_vio_local.h"
+
 #include <algorithm>
 #include <set>
-#include <QTextCodec>
-#include "vio/csync_vio_local.h"
-#include <QFileInfo>
-#include <QFile>
-#include <QThreadPool>
-#include "common/checksums.h"
-#include "csync_exclude.h"
-#include "csync.h"
 
+#include <QDebug>
+#include <QFile>
+#include <QFileInfo>
+#include <QTextCodec>
 
 namespace OCC {
 
@@ -1061,17 +1062,18 @@ void ProcessDirectoryJob::processFileConflict(const SyncFileItemPtr &item, Proce
         // Update the etag and other server metadata in the journal already
         // (We can't use a typical CSYNC_INSTRUCTION_UPDATE_METADATA because
         // we must not store the size/modtime from the file system)
-        OCC::SyncJournalFileRecord rec;
-        if (_discoveryData->_statedb->getFileRecord(path._original, &rec)) {
-            rec._path = path._original.toUtf8();
-            rec._etag = serverEntry.etag;
-            rec._fileId = serverEntry.fileId;
-            rec._modtime = serverEntry.modtime;
-            rec._type = item->_type;
-            rec._fileSize = serverEntry.size;
-            rec._remotePerm = serverEntry.remotePerm;
-            rec._checksumHeader = serverEntry.checksumHeader;
-            _discoveryData->_statedb->setFileRecord(rec);
+        // TODO: is the copy needed
+        auto itemCopy = *item;
+        itemCopy._etag = serverEntry.etag;
+        itemCopy._fileId = serverEntry.fileId;
+        itemCopy._modtime = serverEntry.modtime;
+        itemCopy._size = serverEntry.size;
+        itemCopy._remotePerm = serverEntry.remotePerm;
+        itemCopy._checksumHeader = serverEntry.checksumHeader;
+        const auto result = _discoveryData->_propagator->updateMetadata(itemCopy);
+        if (!result) {
+            item->_errorString = result.error();
+            item->_instruction = CSYNC_INSTRUCTION_ERROR;
         }
         return;
     }
@@ -1474,9 +1476,6 @@ void ProcessDirectoryJob::startAsyncLocalQuery()
         if (_serverQueryDone)
             this->process();
     });
-
-    QThreadPool *pool = QThreadPool::globalInstance();
-    pool->start(localJob); // QThreadPool takes ownership
 }
 
 

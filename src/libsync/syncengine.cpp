@@ -495,6 +495,8 @@ void SyncEngine::startSync()
     _progressInfo->_status = ProgressInfo::Discovery;
     emit transmissionProgress(*_progressInfo);
 
+    // TODO: add a constructor to DiscoveryPhase
+    // pass a syncEngine object rather than copying everyhting to another object
     _discoveryPhase.reset(new DiscoveryPhase);
     _discoveryPhase->_account = _account;
     _discoveryPhase->_excludes = _excludedFiles.data();
@@ -503,6 +505,7 @@ void SyncEngine::startSync()
     if (!_discoveryPhase->_localDir.endsWith(QLatin1Char('/')))
         _discoveryPhase->_localDir+=QLatin1Char('/');
     _discoveryPhase->_remoteFolder = _remotePath;
+    _discoveryPhase->_propagator = _propagator.data();
     if (!_discoveryPhase->_remoteFolder.endsWith(QLatin1Char('/')))
         _discoveryPhase->_remoteFolder+=QLatin1Char('/');
     _discoveryPhase->_syncOptions = _syncOptions;

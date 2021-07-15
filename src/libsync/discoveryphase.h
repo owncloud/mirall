@@ -240,6 +240,7 @@ public:
     // input
     QString _localDir; // absolute path to the local directory. ends with '/'
     QString _remoteFolder; // remote folder, ends with '/'
+    OwncloudPropagator *_propagator;
     SyncJournalDb *_statedb;
     AccountPtr _account;
     SyncOptions _syncOptions;
